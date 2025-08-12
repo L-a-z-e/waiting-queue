@@ -1,12 +1,11 @@
 package com.laze.flowcontrol.controller;
 
+import com.laze.flowcontrol.dto.AllowUserResponse;
+import com.laze.flowcontrol.dto.AllowedUserResponse;
 import com.laze.flowcontrol.dto.RegisterUserResponse;
 import com.laze.flowcontrol.service.UserQueueService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 
 @RestController
@@ -22,4 +21,17 @@ public class UserQueueController {
                 .map(RegisterUserResponse::new);
     }
 
+    @PostMapping("/allow")
+    public Mono<AllowUserResponse> allowUser(@RequestParam(name = "queue", defaultValue = "default") String queue,
+                                             @RequestParam(name = "count") Long count) {
+        return userQueueService.allowUser(queue, count)
+                .map(allowed -> new AllowUserResponse(count, allowed));
+    }
+
+    @GetMapping("/allowed")
+    public Mono<AllowedUserResponse> isAllowed(@RequestParam(name = "queue", defaultValue = "default") String queue,
+                                               @RequestParam(name = "user_id") Long userId) {
+        return userQueueService.isAllowed(queue, userId)
+                .map(AllowedUserResponse::new);
+    }
 }
