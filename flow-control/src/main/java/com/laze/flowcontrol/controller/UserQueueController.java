@@ -2,6 +2,7 @@ package com.laze.flowcontrol.controller;
 
 import com.laze.flowcontrol.dto.AllowUserResponse;
 import com.laze.flowcontrol.dto.AllowedUserResponse;
+import com.laze.flowcontrol.dto.RankNumberResponse;
 import com.laze.flowcontrol.dto.RegisterUserResponse;
 import com.laze.flowcontrol.service.UserQueueService;
 import lombok.RequiredArgsConstructor;
@@ -33,5 +34,12 @@ public class UserQueueController {
                                                @RequestParam(name = "user_id") Long userId) {
         return userQueueService.isAllowed(queue, userId)
                 .map(AllowedUserResponse::new);
+    }
+
+    @GetMapping("/rank")
+    public Mono<RankNumberResponse> getRankUser(@RequestParam(name = "queue", defaultValue = "default") String queue,
+                                                @RequestParam(name = "user_id") Long userId) {
+        return userQueueService.getRank(queue, userId)
+                .map(RankNumberResponse::new);
     }
 }
