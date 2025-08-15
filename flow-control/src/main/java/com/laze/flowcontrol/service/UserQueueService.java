@@ -10,6 +10,9 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 import reactor.util.function.Tuples;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 
 import static com.laze.flowcontrol.exception.ErrorCode.QUEUE_ALREADY_REGISTERED_USER;
@@ -54,6 +57,13 @@ public class UserQueueService {
                 .map(rank -> rank >= 0);
     }
 
+    public Mono<Boolean> isAllowedByToken(final String queue, final Long userId, final String token) throws NoSuchAlgorithmException {
+        return this.generateToken(queue, userId)
+                .filter(gen -> gen.equalsIgnoreCase(token))
+                .map(i -> true)
+                .defaultIfEmpty(false);
+    }
+
     public Mono<Long> getRank(final String queue, final Long userId) {
         return redisTemplate.opsForZSet()
                 .rank(USER_QUEUE_WAIT_KEY.formatted(queue), userId.toString())
@@ -81,5 +91,17 @@ public class UserQueueService {
                 .doOnNext(tuple -> log.info("Tried %d and allowed %d members of %s queue".formatted(maxAllowUserCount, tuple.getT2(), tuple.getT1())))
                 .subscribe();
 
+    }
+
+    public Mono<String> generateToken(final String queue, final Long userId) throws NoSuchAlgorithmException {
+        MessageDigest digest = MessageDigest.getInstance("SHA-256");
+        var input = "user-queue-%s-%d".formatted(queue, userId);
+        byte[] encodedHash = digest.digest(input.getBytes(StandardCharsets.UTF_8));
+
+        StringBuilder hexString = new StringBuilder();
+        for (byte b : encodedHash)
+            hexString.append(String.format("%02x", b));
+
+        return Mono.just(hexString.toString());
     }
 }
